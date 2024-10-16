@@ -1,0 +1,17 @@
+version: '3'
+services:
+  scraper:
+    build: .
+    container_name: playwright-scraper
+    volumes:
+      - .:/app
+    networks:
+      - scraper-net
+    environment:
+      - PYTHONUNBUFFERED=1
+    stdin_open: true
+    tty: true
+
+networks:
+  scraper-net:
+    driver: bridge
