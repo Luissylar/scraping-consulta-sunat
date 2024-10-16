@@ -1,9 +1,15 @@
 from playwright.sync_api import sync_playwright
 import json
 
+def standardize_key(key):
+    key = key.lower()
+    key = key.replace(' ', '_') 
+    key = key.replace(':', '') 
+    key = key.replace('(', '').replace(')', '')
+    return key
+
 def run(playwright):
     browser = playwright.chromium.launch(headless=True)
-
     url = 'https://e-consultaruc.sunat.gob.pe/cl-ti-itmrconsruc/FrameCriterioBusquedaWeb.jsp'
     data = {}
 
@@ -14,13 +20,11 @@ def run(playwright):
     page = context.new_page()
     page.goto(url, wait_until='networkidle')
 
-    search_data = "10730161897"
+    search_data = "20501741079"
 
     # Validar si el RUC es válido
     if len(search_data) != 11:
-        data["success"] = False
-        data["message"] = "El RUC debe tener 11 dígitos"
-        return data
+        return {"success": False, "message": "El RUC debe tener 11 dígitos"}
 
     ruc_input = page.locator('#txtRuc')
     ruc_input.wait_for(state='visible')
@@ -34,47 +38,52 @@ def run(playwright):
     page.wait_for_load_state('networkidle')
 
     if page.url != 'https://e-consultaruc.sunat.gob.pe/cl-ti-itmrconsruc/jcrS00Alias':
-        data["success"] = False
-        data["message"] = "No se encontraron resultados"
-        return data
-    else:
-        data["success"] = True
+        return {"success": False, "message": "No se encontraron resultados"}
+    
+    data["success"] = True
 
-    # Procesar datos de la página
     try:
-        # Obtener RUC y Razón Social
         ruc_razon_social_xpath = 'xpath=/html/body/div/div[2]/div/div[3]/div[2]/div[1]/div/div[2]/h4'
         ruc_razon_social = page.locator(ruc_razon_social_xpath).inner_text()
         ruc, razon_social = ruc_razon_social.split(' - ', 1)
         data["ruc"] = ruc
         data["razon_social"] = razon_social
     except Exception as e:
-        print(f"Error al obtener RUC y Razón Social: {e}")
         data["ruc"] = None
         data["razon_social"] = None
 
-    # Obtener información de etiquetas h4 y p
-    sections = page.locator('xpath=//div[contains(@class, "list-group-item")]')
-    for section in sections.element_handles():
-        h4_element = section.query_selector('h4.list-group-item-heading')  # Cambiado a query_selector
-        if h4_element:
-            key = h4_element.inner_text().strip(':')
-            # Tratar de obtener el texto del siguiente elemento p (si existe)
-            p_element = section.query_selector('p.list-group-item-text')  # Cambiado a query_selector
-            if p_element:
-                value = p_element.inner_text().strip()
+    list_group_items = page.locator('div.list-group-item')
+    for item in list_group_items.element_handles():
+        h4_elements = item.query_selector_all('h4.list-group-item-heading')
+        p_elements = item.query_selector_all('p.list-group-item-text')
+
+        if len(h4_elements) == len(p_elements):
+            for h4, p in zip(h4_elements, p_elements):
+                key = standardize_key(h4.inner_text().strip(':'))
+                value = p.inner_text().strip()
                 data[key] = value
-            else:
-                # Si no hay p_element, tratar de obtener una tabla
-                table_element = section.query_selector('table.tblResultado')  # Buscando la tabla
+
+    try:
+        list_group_items = page.locator('div.list-group-item')
+        for item in list_group_items.element_handles():
+            h4_element = item.query_selector('h4.list-group-item-heading')
+            if h4_element:
+                table_element = item.query_selector('table.tblResultado')
                 if table_element:
-                    # Obtener los valores de la tabla
-                    rows = table_element.query_selector_all('tbody tr')  # Cambiado a query_selector_all
-                    values = []
+                    table_key = standardize_key(h4_element.inner_text().strip()) 
+                    rows = table_element.query_selector_all('tbody tr')  
+                    table_data = [] 
+
                     for row in rows:
-                        cells = row.query_selector_all('td')  # Obtener las celdas de cada fila
-                        values.append([cell.inner_text() for cell in cells])  # Obtener el texto de cada celda
-                    data[key] = values  # Almacenar como lista de filas
+                        cells = row.query_selector_all('td')
+                        for cell in cells:
+                            value = cell.inner_text().strip()
+                            table_data.append(value) 
+
+                    data[table_key] = table_data 
+
+    except Exception as e:
+        print(f"Error al capturar la tabla: {e}")
 
     page.screenshot(path='resultado.png', full_page=True)
     pdf_path = 'resultado.pdf'
