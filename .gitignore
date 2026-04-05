@@ -1,0 +1,26 @@
+# Python bytecode y cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Entornos virtuales
+venv/
+.venv/
+env/
+
+# Herramientas y caches de Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Archivos generados por la app
+consulta.json
+
+# Config local de editores/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
