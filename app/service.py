@@ -9,6 +9,7 @@ from .processors import default_processors
 from .queries import PayloadBuilder, QueryType
 from .searcher import DniSearchStrategy, NombreSearchStrategy, SearchEngine
 from .sender import SunatEmailSender
+from .validators import DniValidator, NombreValidator, NonEmptyValidator, RucValidator, ValidatorEngine
 
 
 class SunatService:
@@ -30,6 +31,11 @@ class SunatService:
         search_engine.register("dni", DniSearchStrategy())
         self.search_engine = search_engine
         self.email_sender = SunatEmailSender(self.client)
+        validator_engine = ValidatorEngine()
+        validator_engine.register("ruc", RucValidator())
+        validator_engine.register("dni", DniValidator())
+        validator_engine.register("nombre", NombreValidator())
+        self.validators = validator_engine
 
     def consultar(self, query_type: QueryType, value: str) -> dict:
         self.client.init_session()

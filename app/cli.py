@@ -4,6 +4,7 @@ import json
 
 from .queries import QueryType
 from .service import SunatService
+from .validators import ValidationError
 
 
 def _read_query_type() -> QueryType:
@@ -28,18 +29,24 @@ def _read_query_type() -> QueryType:
         print("Opcion invalida. Intente nuevamente.")
 
 
-def _read_query_value(query_type: QueryType) -> str:
+def _read_query_value(service: SunatService, query_type: QueryType) -> str:
     labels = {
         QueryType.RUC: "Escriba el RUC: ",
         QueryType.DNI: "Escriba el DNI: ",
         QueryType.NOMBRE: "Escriba el nombre o razon social: ",
     }
+    validator_keys = {
+        QueryType.RUC: "ruc",
+        QueryType.DNI: "dni",
+        QueryType.NOMBRE: "nombre",
+    }
 
     while True:
         value = input(labels[query_type]).strip()
-        if value:
-            return value
-        print("El valor no puede ser vacio.")
+        try:
+            return service.validators.validate(validator_keys[query_type], value)
+        except ValidationError as e:
+            print(f"  {e}")
 
 
 def _select_from_results(results) -> str:
@@ -72,8 +79,10 @@ def _select_from_results(results) -> str:
 
 def _run_email_flow(service: SunatService) -> None:
     ruc = input("Escriba el RUC: ").strip()
-    if not ruc:
-        print("RUC no valido.")
+    try:
+        ruc = service.validators.validate("ruc", ruc)
+    except ValidationError as e:
+        print(f"  {e}")
         return
     email = input("Escriba el correo electronico: ").strip()
     if not email or "@" not in email:
@@ -91,7 +100,7 @@ def run_cli() -> None:
         _run_email_flow(service)
         return
 
-    query_value = _read_query_value(query_type)
+    query_value = _read_query_value(service, query_type)
 
     try:
         if query_type == QueryType.NOMBRE:
