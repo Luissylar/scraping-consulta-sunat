@@ -3,7 +3,7 @@ from typing import Any, Optional
 from bs4 import BeautifulSoup
 
 from ..queries import QueryType
-from .base import BaseProcessor
+from .base import BaseProcessor, normalize_key
 
 
 class InformacionHistoricaProcessor(BaseProcessor):
@@ -25,17 +25,6 @@ class InformacionHistoricaProcessor(BaseProcessor):
             "nroRuc": ruc,
             "desRuc": razon_social or "",
         }
-
-    def _normalize_key(self, header: str) -> str:
-        key = header.lower().strip().rstrip(":")
-        key = key.replace(" ", "_").replace("/", "_")
-        replacements = {
-            "ó": "o", "í": "i", "é": "e", "á": "a", "ú": "u",
-            "ñ": "n", "Ó": "O", "Í": "I", "É": "E", "Á": "A", "Ú": "U", "Ñ": "N",
-        }
-        for old, new in replacements.items():
-            key = key.replace(old, new)
-        return key
 
     def parse(self, html_content: str) -> dict:
         soup = BeautifulSoup(html_content, "html.parser")
@@ -66,12 +55,12 @@ class InformacionHistoricaProcessor(BaseProcessor):
                     if cells and not all(c in ("-", "No hay Información", "") for c in cells):
                         row_dict = {}
                         for i, header in enumerate(headers):
-                            key = self._normalize_key(header)
+                            key = normalize_key(header)
                             row_dict[key] = cells[i] if i < len(cells) else ""
                         rows.append(row_dict)
 
             if rows:
-                key = self._normalize_key(headers[0])
+                key = normalize_key(headers[0])
                 result[key] = rows
 
         return result
