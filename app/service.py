@@ -7,7 +7,7 @@ from .constants import DEFAULT_TOKEN
 from .parser import SunatParser
 from .processors import default_processors
 from .queries import PayloadBuilder, QueryType
-from .searcher import NombreSearchStrategy, SearchEngine
+from .searcher import DniSearchStrategy, NombreSearchStrategy, SearchEngine
 
 
 class SunatService:
@@ -26,6 +26,7 @@ class SunatService:
         self.processors = processors if processors is not None else default_processors()
         search_engine = SearchEngine(self.client)
         search_engine.register("nombre", NombreSearchStrategy())
+        search_engine.register("dni", DniSearchStrategy())
         self.search_engine = search_engine
 
     def consultar(self, query_type: QueryType, value: str) -> dict:
@@ -52,3 +53,7 @@ class SunatService:
     def search_by_name(self, name: str):
         self.client.init_session()
         return self.search_engine.search("nombre", name)
+
+    def search_by_dni(self, dni: str):
+        self.client.init_session()
+        return self.search_engine.search("dni", dni)

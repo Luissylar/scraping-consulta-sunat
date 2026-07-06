@@ -75,7 +75,13 @@ def run_cli() -> None:
     try:
         if query_type == QueryType.NOMBRE:
             results = service.search_by_name(query_value)
-            if not results or not results.results:
+        elif query_type == QueryType.DNI:
+            results = service.search_by_dni(query_value)
+        else:
+            results = None
+
+        if results is not None:
+            if not results.results:
                 print("No se encontraron resultados.")
                 return
             ruc = _select_from_results(results)

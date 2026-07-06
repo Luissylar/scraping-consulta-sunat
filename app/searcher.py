@@ -32,26 +32,7 @@ class SearchStrategy(ABC):
         return self.parse_response(html)
 
 
-class NombreSearchStrategy(SearchStrategy):
-    _action: ClassVar[str] = "consPorRazonSoc"
-
-    def build_payload(self, value: str) -> dict:
-        return {
-            "accion": self._action,
-            "razSoc": value,
-            "nroRuc": "",
-            "nrodoc": "",
-            "token": "",
-            "contexto": "ti-it",
-            "modo": "1",
-            "search1": "",
-            "tipdoc": "1",
-            "search2": "",
-            "rbtnTipo": "3",
-            "search3": value,
-            "codigo": "",
-        }
-
+class _BaseRucListStrategy(SearchStrategy):
     def parse_response(self, html: str) -> SearchResponse:
         soup = BeautifulSoup(html, "html.parser")
         items = soup.select("a.list-group-item.aRucs")
@@ -80,8 +61,50 @@ class NombreSearchStrategy(SearchStrategy):
             if ruc:
                 results.append(SearchResult(ruc=ruc, razon_social=razon_social, ubicacion=ubicacion, estado=estado))
 
-        truncated = "Se encontraron m" in html or "Se encontraron m" in html
+        truncated = "Se encontraron m" in html
         return SearchResponse(results=results, truncated=truncated, total_count=len(results))
+
+
+class NombreSearchStrategy(_BaseRucListStrategy):
+    _action: ClassVar[str] = "consPorRazonSoc"
+
+    def build_payload(self, value: str) -> dict:
+        return {
+            "accion": self._action,
+            "razSoc": value,
+            "nroRuc": "",
+            "nrodoc": "",
+            "token": "",
+            "contexto": "ti-it",
+            "modo": "1",
+            "search1": "",
+            "tipdoc": "1",
+            "search2": "",
+            "rbtnTipo": "3",
+            "search3": value,
+            "codigo": "",
+        }
+
+
+class DniSearchStrategy(_BaseRucListStrategy):
+    _action: ClassVar[str] = "consPorTipdoc"
+
+    def build_payload(self, value: str) -> dict:
+        return {
+            "accion": self._action,
+            "razSoc": "",
+            "nroRuc": "",
+            "nrodoc": value,
+            "token": "",
+            "contexto": "ti-it",
+            "modo": "1",
+            "search1": "",
+            "rbtnTipo": "2",
+            "tipdoc": "1",
+            "search2": value,
+            "search3": "",
+            "codigo": "",
+        }
 
 
 class SearchEngine:
