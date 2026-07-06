@@ -11,6 +11,7 @@ def _read_query_type() -> QueryType:
     print("1) RUC")
     print("2) DNI")
     print("3) NOMBRE (busqueda interactiva)")
+    print("4) ENVIAR POR CORREO")
 
     option_map = {
         "1": QueryType.RUC,
@@ -22,6 +23,8 @@ def _read_query_type() -> QueryType:
         option = input("Opcion: ").strip()
         if option in option_map:
             return option_map[option]
+        if option == "4":
+            return None
         print("Opcion invalida. Intente nuevamente.")
 
 
@@ -67,9 +70,27 @@ def _select_from_results(results) -> str:
             print("Ingrese un numero valido.")
 
 
+def _run_email_flow(service: SunatService) -> None:
+    ruc = input("Escriba el RUC: ").strip()
+    if not ruc:
+        print("RUC no valido.")
+        return
+    email = input("Escriba el correo electronico: ").strip()
+    if not email or "@" not in email:
+        print("Correo no valido.")
+        return
+    msg = service.enviar_por_correo(ruc, email)
+    print(msg)
+
+
 def run_cli() -> None:
     service = SunatService()
     query_type = _read_query_type()
+
+    if query_type is None:
+        _run_email_flow(service)
+        return
+
     query_value = _read_query_value(query_type)
 
     try:

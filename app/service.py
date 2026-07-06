@@ -8,6 +8,7 @@ from .parser import SunatParser
 from .processors import default_processors
 from .queries import PayloadBuilder, QueryType
 from .searcher import DniSearchStrategy, NombreSearchStrategy, SearchEngine
+from .sender import SunatEmailSender
 
 
 class SunatService:
@@ -28,6 +29,7 @@ class SunatService:
         search_engine.register("nombre", NombreSearchStrategy())
         search_engine.register("dni", DniSearchStrategy())
         self.search_engine = search_engine
+        self.email_sender = SunatEmailSender(self.client)
 
     def consultar(self, query_type: QueryType, value: str) -> dict:
         self.client.init_session()
@@ -57,3 +59,10 @@ class SunatService:
     def search_by_dni(self, dni: str):
         self.client.init_session()
         return self.search_engine.search("dni", dni)
+
+    def enviar_por_correo(self, ruc: str, email: str) -> str:
+        self.client.init_session()
+        result = self.consultar(QueryType.RUC, ruc)
+        razon_social = result.get("razon_social", "")
+        msg = self.email_sender.send(ruc, razon_social, email)
+        return msg
