@@ -25,6 +25,7 @@ class SunatService:
         self.processors = processors if processors is not None else default_processors()
 
     def consultar(self, query_type: QueryType, value: str) -> dict:
+        self.client.init_session()
         payload = PayloadBuilder.build(query_type, value, self.token)
         html = self.client.post_query(payload)
         result = self.parser.parse(html)
