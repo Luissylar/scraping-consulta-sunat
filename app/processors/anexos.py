@@ -6,10 +6,10 @@ from ..queries import QueryType
 from .base import BaseProcessor, clear_text, normalize_key
 
 
-class TrabajadoresProcessor(BaseProcessor):
+class EstablecimientosAnexosProcessor(BaseProcessor):
     @property
     def name(self) -> str:
-        return "trabajadores_prestadores_servicio"
+        return "establecimientos_anexos"
 
     def build_payload(self, query_type: QueryType, query_value: str, main_data: dict) -> Optional[dict]:
         if not main_data.get("success"):
@@ -19,28 +19,41 @@ class TrabajadoresProcessor(BaseProcessor):
         if not ruc:
             return None
         return {
-            "accion": "getCantTrab",
+            "accion": "getLocAnex",
             "contexto": "ti-it",
             "modo": "1",
             "nroRuc": ruc,
             "desRuc": razon_social or "",
         }
 
+    def _find_table(self, soup: BeautifulSoup):
+        print_div = soup.find(id="print")
+        if print_div:
+            table = print_div.find("table", class_="table")
+            if table:
+                return table
+        table = soup.select_one(".list-group-item table.table")
+        if table:
+            return table
+        table = soup.find("table", class_="table")
+        if table and table.find("thead"):
+            return table
+        return None
+
     def parse(self, html_content: str) -> dict:
         soup = BeautifulSoup(html_content, "html.parser")
         result = {}
 
-        table = soup.select_one(".table-responsive table.table")
+        table = self._find_table(soup)
         if not table:
             return result
 
         headers = []
         thead = table.find("thead")
         if thead:
-            headers = [
-                normalize_key(th.get_text(strip=True))
-                for th in thead.find_all("th")
-            ]
+            for th in thead.find_all("th"):
+                header = normalize_key(th.get_text(strip=True))
+                headers.append(header)
 
         if not headers:
             return result
@@ -56,5 +69,5 @@ class TrabajadoresProcessor(BaseProcessor):
                         row[key] = cells[i]
                     rows.append(row)
 
-        result["periodos"] = rows
+        result["locales"] = rows
         return result

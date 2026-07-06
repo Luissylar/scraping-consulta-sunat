@@ -20,6 +20,16 @@ def normalize_key(header: str) -> str:
     return key
 
 
+def clear_text(text: str) -> str:
+    if not text:
+        return ""
+    cleaned = " ".join(text.split())
+    if " - " in cleaned:
+        parts = [part.strip() for part in cleaned.split("-", 1)]
+        return " - ".join(parts)
+    return cleaned
+
+
 class BaseProcessor(ABC):
     @property
     @abstractmethod
