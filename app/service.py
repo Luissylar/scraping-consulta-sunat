@@ -7,6 +7,7 @@ from .constants import DEFAULT_TOKEN
 from .parser import SunatParser
 from .processors import default_processors
 from .queries import PayloadBuilder, QueryType
+from .searcher import NombreSearchStrategy, SearchEngine
 
 
 class SunatService:
@@ -23,6 +24,9 @@ class SunatService:
         self.parser = parser or SunatParser()
         self.token = token
         self.processors = processors if processors is not None else default_processors()
+        search_engine = SearchEngine(self.client)
+        search_engine.register("nombre", NombreSearchStrategy())
+        self.search_engine = search_engine
 
     def consultar(self, query_type: QueryType, value: str) -> dict:
         self.client.init_session()
@@ -44,3 +48,7 @@ class SunatService:
                         print(f"Error en procesador '{processor.name}': {exc}")
 
         return result
+
+    def search_by_name(self, name: str):
+        self.client.init_session()
+        return self.search_engine.search("nombre", name)
