@@ -7,17 +7,17 @@ from .constants import DEFAULT_HEADERS, SUNAT_URL
 
 
 class SunatHttpClient:
-    """Encapsula el envio de peticiones HTTP a SUNAT."""
+    """Encapsula el envio de peticiones HTTP a SUNAT con sesion persistente."""
 
     def __init__(self, url: str = SUNAT_URL, headers: Optional[dict] = None, timeout: int = 30):
         self.url = url
-        self.headers = headers or DEFAULT_HEADERS
         self.timeout = timeout
+        self.session = requests.Session()
+        self.session.headers.update(headers or DEFAULT_HEADERS)
 
     def post_query(self, payload: dict) -> str:
-        response = requests.post(
+        response = self.session.post(
             self.url,
-            headers=self.headers,
             data=payload,
             timeout=self.timeout,
         )
